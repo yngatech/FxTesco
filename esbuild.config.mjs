@@ -59,7 +59,9 @@ let envVariables = [
   'VIDEO_TRANSCODE_BSKY_DOMAIN_LIST',
   'PBS_PROXY_DOMAIN_LIST',
   'OLD_EMBED_DOMAINS',
-  'TWITTER_ROOT'
+  'TWITTER_ROOT',
+  'TESCO_DOMAIN_LIST',
+  'ASSETS_DOMAIN_LIST'
 ];
 
 // Inline process.env.* so Workers bundles stay static; Bun/Node read real process.env at runtime.

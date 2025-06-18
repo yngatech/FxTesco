@@ -69,6 +69,8 @@ import { cacheMiddleware } from './caches';
 import { bluesky } from './realms/bluesky/router';
 import { blueskyApi } from './realms/bluesky-api/router';
 import { atmosphere } from './realms/atmosphere/router';
+import { tesco } from './realms/tesco/router';
+import { assets } from './realms/assets/router';
 import { getBranding } from './helpers/branding';
 import { tiktok } from './realms/tiktok/router';
 
@@ -92,6 +94,7 @@ export const app = new Hono<{
     TwitterProxy?: Fetcher;
     CREDENTIAL_KEY?: string;
     EXCEPTION_DISCORD_WEBHOOK?: string;
+    ASSETS?: Fetcher;
     AnalyticsEngine: AnalyticsEngineDataset;
   };
 }>({
@@ -115,12 +118,18 @@ export const app = new Hono<{
     } else if (Constants.ATMOSPHERE_API_HOST_LIST.includes(url.hostname)) {
       realm = 'atmosphere';
       console.log('Atmosphere API realm');
+    } else if (Constants.ASSETS_DOMAIN_LIST.includes(url.hostname)) {
+      realm = 'assets';
+      console.log('Assets realm');
     } else if (Constants.STANDARD_DOMAIN_LIST.includes(baseHostName)) {
       realm = 'twitter';
       console.log('Twitter realm');
     } else if (Constants.STANDARD_BSKY_DOMAIN_LIST.includes(baseHostName)) {
       realm = 'bluesky';
       console.log('Bluesky realm');
+    } else if (Constants.TESCO_DOMAIN_LIST.includes(baseHostName)) {
+      realm = 'tesco';
+      console.log('Tesco realm');
     } else if (Constants.STANDARD_TIKTOK_DOMAIN_LIST.includes(baseHostName)) {
       realm = 'tiktok';
       console.log('TikTok realm');
@@ -241,6 +250,8 @@ app.get('/', c => {
       /twitter/...     FxTwitter / FixupX
       /bluesky/...     FxBluesky
       /tiktok/...      TikTok realm
+      /tesco/...       Tesco product embeds
+      /assets/...      Static assets binding
       /api/...         FxTwitter API
       /blueskyapi/...  FxBluesky API
       /atmosphere/...  Atmosphere API (multi-provider)
@@ -255,6 +266,8 @@ app.route(`/atmosphere`, atmosphere);
 app.route(`/twitter`, twitter);
 app.route(`/bluesky`, bluesky);
 app.route(`/tiktok`, tiktok);
+app.route(`/tesco`, tesco);
+app.route(`/assets`, assets);
 
 app.all('/error', async c => {
   c.header('cache-control', noCache);

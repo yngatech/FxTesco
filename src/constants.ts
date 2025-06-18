@@ -53,6 +53,8 @@ export const Constants = {
   TIKTOK_ROOT: 'https://www.tiktok.com',
   TIKTOK_API_HOST: 'https://api16-normal-c-useast1a.tiktokv.com',
   NATIVE_MULTI_IMAGE_UA_REGEX: /discordbot\/|matrixpreviewbot/gi,
+  TESCO_DOMAIN_LIST: (process.env.TESCO_DOMAIN_LIST ?? '').split(','),
+  ASSETS_DOMAIN_LIST: (process.env.ASSETS_DOMAIN_LIST ?? '').split(','),
   BOT_UA_REGEX:
     /bot|facebook|embed|got|firefox\/92|firefox\/38|chrome\/96\.0\.4664\.110|curl|wget|go-http|yahoo|generator|whatsapp|revoltchat|preview|link|proxy|vkshare|images|analyzer|index|crawl|spider|python|node|deno|mastodon|http\.rb|ruby|bun\/|fiddler|iframely|steamchaturllookup|bluesky|matrix-media-repo|cardyb|resolver|util|feedly|rss|reader|atom|thunderbird|axios/gi,
   /* 3 hours */
