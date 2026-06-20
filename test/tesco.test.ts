@@ -82,3 +82,33 @@ test('Tesco groceries product URLs remain supported', async () => {
 
   expect(result.status).toBe(200);
 });
+
+test('Tesco favicon is served from FxTesco branding', async () => {
+  const iconBody = new Uint8Array([137, 80, 78, 71]);
+  const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input: RequestInfo) => {
+    const url = typeof input === 'string' ? input : input.url;
+    expect(url).toBe('https://assets.fxtesco.com/logos/fxtesco-pride32.png');
+    return new Response(iconBody, {
+      status: 200,
+      headers: {
+        'Content-Type': 'image/png',
+        'Content-Length': iconBody.byteLength.toString()
+      }
+    });
+  });
+
+  const result = await app.request(
+    new Request('https://www.fxtesco.com/favicon.ico', {
+      method: 'GET',
+      headers: botHeaders
+    }),
+    undefined,
+    harness
+  );
+
+  expect(result.status).toBe(200);
+  expect(result.headers.get('content-type')).toBe('image/png');
+  expect(result.headers.get('content-length')).toBe(iconBody.byteLength.toString());
+  expect(fetchMock).toHaveBeenCalledTimes(1);
+  expect(new Uint8Array(await result.arrayBuffer())).toEqual(iconBody);
+});

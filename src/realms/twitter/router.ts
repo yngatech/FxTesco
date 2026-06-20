@@ -8,9 +8,9 @@ import { profileRequest } from './routes/profile';
 import { statusRequest } from './routes/status';
 import { oembed } from '../api/routes/oembed';
 import { trimTrailingSlash } from 'hono/trailing-slash';
-import { ContentfulStatusCode } from 'hono/utils/http-status';
 import { activityRequest } from './routes/activity';
 import { getBranding } from '../../helpers/branding';
+import { faviconRoute } from '../../helpers/favicon';
 import {
   profileFeedAtomTwitter,
   profileFeedRssTwitter,
@@ -42,20 +42,6 @@ export const getBaseRedirectUrl = (c: Context) => {
   }
 
   return Constants.TWITTER_ROOT;
-};
-
-export const faviconRoute = async (c: Context) => {
-  const branding = getBranding(c);
-  try {
-    const response = await fetch(branding.favicon);
-    const body = await response.arrayBuffer();
-    return c.body(body, response.status as ContentfulStatusCode, {
-      'Content-Type': response.headers.get('Content-Type') || 'image/x-icon',
-      'Content-Length': response.headers.get('Content-Length') || body.byteLength.toString()
-    });
-  } catch (_e) {
-    return c.redirect(branding.favicon, 302);
-  }
 };
 
 /* Workaround for some dumb maybe-build time issue where statusRequest isn't ready or something because none of these trigger*/
