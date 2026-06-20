@@ -54,20 +54,12 @@ export const twitterFetch = async (
   const guestTokenRequest = new Request(`${env.apiRoot}/1.1/guest/activate.json`, {
     method: 'POST',
     headers: tokenHeaders,
-    cf: {
-      cacheEverything: true,
-      cacheTtl: env.guestTokenMaxAge
-    },
     body: ''
-  } as RequestInit);
+  });
 
   const guestTokenRequestCacheDummy = new Request(`${env.apiRoot}/1.1/guest/activate.json`, {
-    method: 'GET',
-    cf: {
-      cacheEverything: true,
-      cacheTtl: env.guestTokenMaxAge
-    }
-  } as RequestInit);
+    method: 'GET'
+  });
 
   const cache =
     typeof caches !== 'undefined' ? (caches as unknown as { default: Cache }).default : null;
