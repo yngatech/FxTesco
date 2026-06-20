@@ -5,6 +5,7 @@ import harness from './helpers/harness';
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 const mockTescoProductHtml = `<!doctype html>
@@ -142,6 +143,58 @@ test('Tesco product fetch retries transient upstream failures', async () => {
 
   expect(result.status).toBe(200);
   expect(fetchMock).toHaveBeenCalledTimes(2);
+});
+
+test('Tesco product fetch falls back to cached product data after upstream failures', async () => {
+  const fetchMock = vi
+    .spyOn(globalThis, 'fetch')
+    .mockResolvedValue(new Response('blocked', { status: 403 }));
+  const cacheMatch = vi.fn(async (request: Request) => {
+    expect(request.url).toBe('https://fxtesco.internal/cache/tesco/en-GB/products/323311991');
+    return new Response(
+      JSON.stringify({
+        url: 'https://www.tesco.com/shop/en-GB/products/323311991',
+        name: 'Cached Tesco Product',
+        description: 'Cached product description.',
+        imageUrl: mockTescoImageUrl,
+        price: '£1.50',
+        brand: 'TESCO finest'
+      }),
+      {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
+  });
+  const cachePut = vi.fn();
+  vi.stubGlobal('caches', {
+    default: {
+      match: cacheMatch,
+      put: cachePut
+    }
+  });
+
+  const result = await app.request(
+    new Request('https://www.fxtesco.com/shop/en-GB/products/323311991', {
+      method: 'GET',
+      headers: botHeaders
+    }),
+    undefined,
+    harness,
+    {
+      waitUntil: vi.fn(),
+      passThroughOnException: vi.fn()
+    } as unknown as ExecutionContext
+  );
+  const html = await result.text();
+
+  expect(result.status).toBe(200);
+  expect(result.headers.get('location')).toBeNull();
+  expect(fetchMock).toHaveBeenCalledTimes(3);
+  expect(cacheMatch).toHaveBeenCalledTimes(1);
+  expect(cachePut).not.toHaveBeenCalled();
+  expect(html).toContain('<meta property="og:title" content="Cached Tesco Product"/>');
+  expect(html).toContain(`<meta property="og:image" content="${proxiedMockTescoImageUrl}"/>`);
 });
 
 test('Tesco favicon is served from FxTesco branding', async () => {

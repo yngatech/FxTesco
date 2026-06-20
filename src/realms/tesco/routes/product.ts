@@ -148,6 +148,19 @@ class TescoDataCollector {
 const tescoProductUrl = (locale: string, id: string) =>
   `https://www.tesco.com/shop/${locale}/products/${id}`;
 
+const tescoProductCacheRequest = (locale: string, id: string) =>
+  new Request(
+    `https://fxtesco.internal/cache/tesco/${encodeURIComponent(locale)}/products/${encodeURIComponent(id)}`
+  );
+
+const getExecutionCtx = (c: Context): ExecutionContext | null => {
+  try {
+    return c.executionCtx ?? null;
+  } catch (_e) {
+    return null;
+  }
+};
+
 const isTescoImageUrl = (url: URL): boolean =>
   url.hostname === 'digitalcontent.api.tesco.com' && url.pathname.startsWith('/v2/media/');
 
@@ -176,8 +189,72 @@ const getActivityIcon = (c: Context): string | undefined => {
   return Array.isArray(icons) ? icons[0]?.default : icons.default;
 };
 
-const fetchTescoProduct = async (locale: string, id: string): Promise<TescoProductData | null> => {
+const readCachedTescoProduct = async (
+  locale: string,
+  id: string
+): Promise<TescoProductData | null> => {
+  if (typeof caches === 'undefined') {
+    return null;
+  }
+
+  try {
+    const response = await caches.default.match(tescoProductCacheRequest(locale, id));
+    if (!response?.ok) {
+      return null;
+    }
+
+    const data: unknown = await response.json();
+    if (
+      !isRecord(data) ||
+      typeof data.url !== 'string' ||
+      typeof data.name !== 'string' ||
+      typeof data.imageUrl !== 'string'
+    ) {
+      return null;
+    }
+
+    return {
+      url: data.url,
+      name: data.name,
+      imageUrl: data.imageUrl,
+      description: typeof data.description === 'string' ? data.description : undefined,
+      price: typeof data.price === 'string' ? data.price : undefined,
+      brand: typeof data.brand === 'string' ? data.brand : undefined
+    };
+  } catch (e) {
+    console.error('Failed to read cached Tesco product:', e);
+    return null;
+  }
+};
+
+const cacheTescoProduct = (
+  executionCtx: ExecutionContext | null,
+  locale: string,
+  id: string,
+  product: TescoProductData
+) => {
+  if (typeof caches === 'undefined' || !executionCtx) {
+    return;
+  }
+
+  const response = new Response(JSON.stringify(product), {
+    headers: {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'public, max-age=43200'
+    }
+  });
+
+  executionCtx.waitUntil(caches.default.put(tescoProductCacheRequest(locale, id), response));
+};
+
+const fetchTescoProduct = async (
+  c: Context,
+  locale: string,
+  id: string
+): Promise<TescoProductData | null> => {
   const originalUrl = tescoProductUrl(locale, id);
+  const executionCtx = getExecutionCtx(c);
+  const cachedProduct = executionCtx ? await readCachedTescoProduct(locale, id) : null;
 
   console.log(`Fetching Tesco product: ${originalUrl}`);
 
@@ -245,8 +322,14 @@ const fetchTescoProduct = async (locale: string, id: string): Promise<TescoProdu
     product.description = sanitizeText(product.description || 'View on Tesco.com');
 
     console.log('Parsed Tesco product with HTMLRewriter:', product);
+    cacheTescoProduct(executionCtx, locale, id, product);
 
     return product;
+  }
+
+  if (cachedProduct) {
+    console.warn(`Using cached Tesco product after fresh fetch failures: ${originalUrl}`);
+    return cachedProduct;
   }
 
   return null;
@@ -340,7 +423,7 @@ export const productRequest = async (c: Context) => {
   }
 
   try {
-    const product = await fetchTescoProduct(locale, id);
+    const product = await fetchTescoProduct(c, locale, id);
     if (!product) {
       return c.redirect(originalUrl, 302);
     }
@@ -441,7 +524,7 @@ export const productRequest = async (c: Context) => {
 export const productActivityRequest = async (c: Context) => {
   const { id } = c.req.param();
   const locale = c.req.query('locale') || 'en-GB';
-  const product = await fetchTescoProduct(locale, id);
+  const product = await fetchTescoProduct(c, locale, id);
 
   if (!product) {
     return c.json({ error: 'Could not fetch Tesco product' }, 502);
