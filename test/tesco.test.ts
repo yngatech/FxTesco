@@ -187,6 +187,9 @@ test('Tesco image proxy fetches allowed product image URLs with browser image he
   const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
     const url = typeof input === 'string' ? input : input.url;
     expect(url).toBe(`${mockTescoImageUrl}?fm=jpg`);
+    expect((init?.headers as Record<string, string>)['Accept']).toBe(
+      'image/jpeg,image/*,*/*;q=0.8'
+    );
     expect((init?.headers as Record<string, string>)['Sec-Fetch-Dest']).toBe('image');
     return new Response(imageBody, {
       status: 200,
