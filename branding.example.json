@@ -82,6 +82,23 @@
         "48": "https://fxembed-assets.pages.dev/logos/fxinstagram48.png",
         "64": "https://fxembed-assets.pages.dev/logos/fxinstagram64.png"
       }
+    },
+    {
+      "name": "FxTesco",
+      "domains": ["fxtesco.com"],
+      "provider": "tesco",
+      "favicon": "https://assets.fxtesco.com/logos/fxtesco-pride32.png",
+      "redirect": "https://www.tesco.com",
+      "color": "#00539f",
+      "activityIcons": {
+        "default": "https://assets.fxtesco.com/logos/fxtesco-pride32.png",
+        "svg": "https://assets.fxtesco.com/logos/fxtesco-pride.svg",
+        "16": "https://assets.fxtesco.com/logos/fxtesco-pride16.png",
+        "24": "https://assets.fxtesco.com/logos/fxtesco-pride24.png",
+        "32": "https://assets.fxtesco.com/logos/fxtesco-pride32.png",
+        "48": "https://assets.fxtesco.com/logos/fxtesco-pride48.png",
+        "64": "https://assets.fxtesco.com/logos/fxtesco-pride64.png"
+      }
     }
   ]
 }
