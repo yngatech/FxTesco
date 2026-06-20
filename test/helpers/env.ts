@@ -20,6 +20,7 @@ export const WORKER_TEST_PROCESS_ENV = {
   API_HOST_LIST: 'api.fxtwitter.com',
   BLUESKY_API_HOST_LIST: 'api.fxbsky.app',
   ATMOSPHERE_API_HOST_LIST: 'api.atmosphere.tools',
+  TESCO_DOMAIN_LIST: 'fxtesco.com,www.fxtesco.com',
   GIF_TRANSCODE_DOMAIN_LIST: 'gif.fxtwitter.com',
   VIDEO_TRANSCODE_DOMAIN_LIST: 'video.fxtwitter.com',
   VIDEO_TRANSCODE_BSKY_DOMAIN_LIST: 'video.fxbsky.app',

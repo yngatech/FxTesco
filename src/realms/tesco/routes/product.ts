@@ -147,7 +147,7 @@ class TescoDataCollector {
 
 export const productRequest = async (c: Context) => {
   const { locale, id } = c.req.param();
-  const originalUrl = `https://www.tesco.com/groceries/${locale}/products/${id}`;
+  const originalUrl = `https://www.tesco.com/shop/${locale}/products/${id}`;
 
   console.log(`Fetching Tesco product: ${originalUrl}`);
 
@@ -312,7 +312,7 @@ export const productRequest = async (c: Context) => {
         console.log('couldnt parse hostname for some reason', e);
       }
 
-      // groceries/${locale}/products/${id}
+      // shop/${locale}/products/${id}
       // headers.push(
       //   `<link href='{base}/users/{author}/statuses/{status}' rel='alternate' type='application/activity+json'>`.format(
       //     {
@@ -323,7 +323,7 @@ export const productRequest = async (c: Context) => {
       //   )
       // );
       headers.push(
-        `<link href='{base}/groceries/{locale}/products/{id}' rel='alternate' type='application/activity+json'>`.format(
+        `<link href='{base}/shop/{locale}/products/{id}' rel='alternate' type='application/activity+json'>`.format(
           {
             base: `https://${base}`,
             locale: encodeURIComponent(locale),
