@@ -85,9 +85,11 @@ test('Tesco groceries product URLs remain supported', async () => {
 
 test('Tesco favicon is served from FxTesco branding', async () => {
   const iconBody = new Uint8Array([137, 80, 78, 71]);
-  const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input: RequestInfo) => {
-    const url = typeof input === 'string' ? input : input.url;
-    expect(url).toBe('https://assets.fxtesco.com/logos/fxtesco-pride32.png');
+  const fetchMock = vi.spyOn(globalThis, 'fetch');
+  const assetsFetch = vi.fn(async (input: RequestInfo) => {
+    const url = new URL(typeof input === 'string' ? input : input.url);
+    expect(url.hostname).toBe('assets.fxtesco.com');
+    expect(url.pathname).toBe('/logos/fxtesco-pride32.png');
     return new Response(iconBody, {
       status: 200,
       headers: {
@@ -103,12 +105,18 @@ test('Tesco favicon is served from FxTesco branding', async () => {
       headers: botHeaders
     }),
     undefined,
-    harness
+    {
+      ...harness,
+      ASSETS: { fetch: assetsFetch }
+    }
   );
+  const body = new Uint8Array(await result.arrayBuffer());
 
   expect(result.status).toBe(200);
   expect(result.headers.get('content-type')).toBe('image/png');
   expect(result.headers.get('content-length')).toBe(iconBody.byteLength.toString());
-  expect(fetchMock).toHaveBeenCalledTimes(1);
-  expect(new Uint8Array(await result.arrayBuffer())).toEqual(iconBody);
+  expect(assetsFetch).toHaveBeenCalledTimes(1);
+  expect(body.slice(0, 4)).toEqual(new Uint8Array([137, 80, 78, 71]));
+  expect(body).toEqual(iconBody);
+  expect(fetchMock).not.toHaveBeenCalled();
 });
