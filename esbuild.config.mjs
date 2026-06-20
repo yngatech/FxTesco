@@ -7,6 +7,25 @@ import fs from 'fs';
 
 config();
 
+function loadWranglerConfig() {
+  try {
+    const raw = fs.readFileSync('wrangler.jsonc', 'utf-8');
+    const parsed = JSON.parse(raw) ?? {};
+    if (parsed && typeof parsed === 'object') {
+      return parsed;
+    }
+  } catch (err) {
+    if (!err || typeof err !== 'object' || err.code !== 'ENOENT') {
+      console.warn(`Could not read wrangler.jsonc: ${err}`);
+    }
+  }
+  return {};
+}
+
+const wranglerConfig = loadWranglerConfig();
+const wranglerVars =
+  wranglerConfig.vars && typeof wranglerConfig.vars === 'object' ? wranglerConfig.vars : {};
+
 // check if no-sentry-upload command line argument is set
 const noSentryUpload = process.argv.includes('--no-sentry-upload');
 
@@ -30,7 +49,11 @@ try {
     .toString()
     .match(/name ?= ?"(.+?)"/)[1];
 } catch (e) {
-  console.error(`Error reading wrangler.toml to find worker name, using 'fixtweet' instead.`);
+  if (typeof wranglerConfig.name === 'string' && wranglerConfig.name) {
+    workerName = wranglerConfig.name;
+  } else {
+    console.error(`Error reading Wrangler config to find worker name, using 'fixtweet' instead.`);
+  }
 }
 
 const releaseName = `${workerName}-${gitBranch}-${gitCommit}-${new Date()
@@ -67,7 +90,9 @@ let envVariables = [
 // Inline process.env.* so Workers bundles stay static; Bun/Node read real process.env at runtime.
 let defines = {};
 for (let envVar of envVariables) {
-  defines[`process.env.${envVar}`] = JSON.stringify(process.env[envVar] ?? '');
+  defines[`process.env.${envVar}`] = JSON.stringify(
+    process.env[envVar] ?? wranglerVars[envVar] ?? ''
+  );
 }
 
 defines['process.env.RELEASE_NAME'] = JSON.stringify(releaseName);

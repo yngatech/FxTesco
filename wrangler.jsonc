@@ -1,0 +1,67 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "fxtesco",
+  "account_id": "c758a534d893ea05ed051851bacabeb7",
+  "main": "./dist/worker.js",
+  "compatibility_date": "2026-04-11",
+  "send_metrics": false,
+  "no_bundle": true,
+  "build": {
+    "command": "npm run build"
+  },
+  "workers_dev": true,
+  "preview_urls": true,
+  "routes": [
+    {
+      "pattern": "fxtesco.com",
+      "custom_domain": true
+    },
+    {
+      "pattern": "www.fxtesco.com",
+      "custom_domain": true
+    },
+    {
+      "pattern": "assets.fxtesco.com",
+      "custom_domain": true
+    }
+  ],
+  "assets": {
+    "directory": "./assets",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  },
+  "analytics_engine_datasets": [
+    {
+      "binding": "AnalyticsEngine"
+    }
+  ],
+  "ai": {
+    "binding": "AI"
+  },
+  "vars": {
+    "TESCO_DOMAIN_LIST": "fxtesco.com,www.fxtesco.com",
+    "ASSETS_DOMAIN_LIST": "assets.fxtesco.com",
+    "STANDARD_DOMAIN_LIST": "",
+    "STANDARD_BSKY_DOMAIN_LIST": "",
+    "STANDARD_TIKTOK_DOMAIN_LIST": "",
+    "DIRECT_MEDIA_DOMAINS": "",
+    "TEXT_ONLY_DOMAINS": "",
+    "INSTANT_VIEW_DOMAINS": "",
+    "GALLERY_DOMAINS": "",
+    "FORCE_MOSAIC_DOMAINS": "",
+    "OLD_EMBED_DOMAINS": "",
+    "MOSAIC_DOMAIN_LIST": "",
+    "MOSAIC_BSKY_DOMAIN_LIST": "",
+    "POLYGLOT_DOMAIN_LIST": "",
+    "POLYGLOT_ACCESS_TOKEN": "",
+    "API_HOST_LIST": "",
+    "BLUESKY_API_HOST_LIST": "",
+    "ATMOSPHERE_API_HOST_LIST": "",
+    "GIF_TRANSCODE_DOMAIN_LIST": "",
+    "VIDEO_TRANSCODE_DOMAIN_LIST": "",
+    "VIDEO_TRANSCODE_BSKY_DOMAIN_LIST": "",
+    "PBS_PROXY_DOMAIN_LIST": "",
+    "TWITTER_ROOT": "https://x.com",
+    "SENTRY_DSN": ""
+  }
+}
