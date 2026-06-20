@@ -112,8 +112,8 @@ export const cacheMiddleware = (): MiddlewareHandler => async (c, next) => {
       return c.html('');
     /* yes, we do give HEAD */
     case 'HEAD':
-      if (returnAsJson) return c.json('');
-      return c.html('');
+      await next();
+      return new Response(null, c.res);
     /* We properly state our OPTIONS when asked */
     case 'OPTIONS':
       console.log('OPTIONS!!!');
