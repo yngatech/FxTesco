@@ -181,65 +181,75 @@ const fetchTescoProduct = async (locale: string, id: string): Promise<TescoProdu
 
   console.log(`Fetching Tesco product: ${originalUrl}`);
 
-  const [userAgent, secChUa] = generateUserAgent();
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const [userAgent, secChUa] = generateUserAgent();
 
-  const response = await fetch(originalUrl, {
-    headers: {
-      'User-Agent': userAgent,
-      'Accept':
-        'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-      'Accept-Language': 'en-US,en;q=0.5',
-      'Sec-Fetch-Dest': 'document',
-      'Sec-Fetch-Mode': 'navigate',
-      'Sec-Fetch-Site': 'none',
-      'Sec-Fetch-User': '?1',
-      'Upgrade-Insecure-Requests': '1',
-      ...(secChUa && {
-        'sec-ch-ua': secChUa,
-        'sec-ch-ua-mobile': '?0',
-        'sec-ch-ua-platform': '"Windows"'
-      })
-    },
-    redirect: 'follow'
-  });
+    let response: Response;
+    try {
+      response = await fetch(originalUrl, {
+        headers: {
+          'User-Agent': userAgent,
+          'Accept':
+            'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.5',
+          'Sec-Fetch-Dest': 'document',
+          'Sec-Fetch-Mode': 'navigate',
+          'Sec-Fetch-Site': 'none',
+          'Sec-Fetch-User': '?1',
+          'Upgrade-Insecure-Requests': '1',
+          ...(secChUa && {
+            'sec-ch-ua': secChUa,
+            'sec-ch-ua-mobile': '?0',
+            'sec-ch-ua-platform': '"Windows"'
+          })
+        },
+        redirect: 'follow'
+      });
+    } catch (e) {
+      console.error(`Tesco fetch attempt ${attempt} threw:`, e);
+      continue;
+    }
 
-  console.log(`Tesco fetch completed with status: ${response.status}`);
+    console.log(`Tesco fetch attempt ${attempt} completed with status: ${response.status}`);
 
-  if (!response.ok) {
-    const errorText = await response.text().catch(() => 'Could not read error body');
-    console.error(
-      `Tesco fetch failed with status: ${response.status}. Body: ${errorText.substring(0, 500)}`
-    );
-    return null;
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Could not read error body');
+      console.error(
+        `Tesco fetch attempt ${attempt} failed with status: ${response.status}. Body: ${errorText.substring(0, 500)}`
+      );
+      continue;
+    }
+
+    const collector = new TescoDataCollector();
+    const rewriter = new HTMLRewriter()
+      .on('meta[property="og:title"]', collector)
+      .on('meta[property="og:description"]', collector)
+      .on('meta[property="og:image"]', collector)
+      .on('script[type="application/ld+json"]', { text: text => collector.scriptText(text) })
+      .on('title', { text: text => collector.titleText(text) });
+
+    await rewriter.transform(response).arrayBuffer();
+
+    const product = collector.data as TescoProductData;
+    product.url = originalUrl;
+
+    if (!product.name || !product.imageUrl) {
+      console.error(
+        `HTMLRewriter failed to collect essential product data (name/image). Name: ${product.name}, ImageURL: ${product.imageUrl}`
+      );
+      console.log('Final collector state:', JSON.stringify(collector.data));
+      continue;
+    }
+
+    product.name = sanitizeText(product.name);
+    product.description = sanitizeText(product.description || 'View on Tesco.com');
+
+    console.log('Parsed Tesco product with HTMLRewriter:', product);
+
+    return product;
   }
 
-  const collector = new TescoDataCollector();
-  const rewriter = new HTMLRewriter()
-    .on('meta[property="og:title"]', collector)
-    .on('meta[property="og:description"]', collector)
-    .on('meta[property="og:image"]', collector)
-    .on('script[type="application/ld+json"]', { text: text => collector.scriptText(text) })
-    .on('title', { text: text => collector.titleText(text) });
-
-  await rewriter.transform(response).arrayBuffer();
-
-  const product = collector.data as TescoProductData;
-  product.url = originalUrl;
-
-  if (!product.name || !product.imageUrl) {
-    console.error(
-      `HTMLRewriter failed to collect essential product data (name/image). Name: ${product.name}, ImageURL: ${product.imageUrl}`
-    );
-    console.log('Final collector state:', JSON.stringify(collector.data));
-    return null;
-  }
-
-  product.name = sanitizeText(product.name);
-  product.description = sanitizeText(product.description || 'View on Tesco.com');
-
-  console.log('Parsed Tesco product with HTMLRewriter:', product);
-
-  return product;
+  return null;
 };
 
 const buildProductActivityStatus = (
@@ -457,6 +467,7 @@ export const productImageRequest = async (c: Context) => {
   if (!isTescoImageUrl(url)) {
     return c.text('Invalid image host', 400);
   }
+  url.searchParams.set('fm', 'jpg');
 
   const response = await fetch(url.toString(), {
     headers: {

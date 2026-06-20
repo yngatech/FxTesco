@@ -120,6 +120,30 @@ test('Tesco groceries product URLs remain supported', async () => {
   expect(result.status).toBe(200);
 });
 
+test('Tesco product fetch retries transient upstream failures', async () => {
+  const fetchMock = vi
+    .spyOn(globalThis, 'fetch')
+    .mockResolvedValueOnce(new Response('blocked', { status: 403 }))
+    .mockResolvedValueOnce(
+      new Response(mockTescoProductHtml, {
+        status: 200,
+        headers: { 'Content-Type': 'text/html;charset=UTF-8' }
+      })
+    );
+
+  const result = await app.request(
+    new Request('https://www.fxtesco.com/shop/en-GB/products/323311991', {
+      method: 'GET',
+      headers: botHeaders
+    }),
+    undefined,
+    harness
+  );
+
+  expect(result.status).toBe(200);
+  expect(fetchMock).toHaveBeenCalledTimes(2);
+});
+
 test('Tesco favicon is served from FxTesco branding', async () => {
   const iconBody = new Uint8Array([137, 80, 78, 71]);
   const fetchMock = vi.spyOn(globalThis, 'fetch');
@@ -162,12 +186,12 @@ test('Tesco image proxy fetches allowed product image URLs with browser image he
   const imageBody = new Uint8Array([0, 0, 0, 28]);
   const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
     const url = typeof input === 'string' ? input : input.url;
-    expect(url).toBe(mockTescoImageUrl);
+    expect(url).toBe(`${mockTescoImageUrl}?fm=jpg`);
     expect((init?.headers as Record<string, string>)['Sec-Fetch-Dest']).toBe('image');
     return new Response(imageBody, {
       status: 200,
       headers: {
-        'Content-Type': 'image/avif',
+        'Content-Type': 'image/jpeg',
         'Content-Length': imageBody.byteLength.toString()
       }
     });
@@ -184,7 +208,7 @@ test('Tesco image proxy fetches allowed product image URLs with browser image he
   const body = new Uint8Array(await result.arrayBuffer());
 
   expect(result.status).toBe(200);
-  expect(result.headers.get('content-type')).toBe('image/avif');
+  expect(result.headers.get('content-type')).toBe('image/jpeg');
   expect(result.headers.get('cache-control')).toBe('public, max-age=43200');
   expect(fetchMock).toHaveBeenCalledTimes(1);
   expect(body).toEqual(imageBody);
