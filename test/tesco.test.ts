@@ -108,7 +108,7 @@ test('Tesco oEmbed returns FxEmbed-style provider metadata', async () => {
     author_name: 'Tesco Finest Crisps',
     author_url: 'https://www.tesco.com/shop/en-GB/products/323311991',
     provider_name: 'Tesco Finest on Tesco',
-    provider_url: 'https://www.tesco.com/shop/en-GB/products/323311991',
+    provider_url: 'https://www.fxtesco.com/shop/en-GB/products/323311991',
     title: 'Embed',
     type: 'rich',
     version: '1.0'

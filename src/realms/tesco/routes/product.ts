@@ -599,14 +599,15 @@ export const productOEmbedRequest = async (c: Context) => {
   const text = searchParams.get('text') ?? 'Tesco';
   const status = searchParams.get('status') ?? '0';
   const locale = searchParams.get('locale') || 'en-GB';
-  const statusUrl = tescoProductUrl(locale, status);
+  const authorUrl = tescoProductUrl(locale, status);
+  const providerUrl = defaultProductEmbedUrl(c, locale, status);
   const branding = getBranding(c);
 
   const data: OEmbed = {
     author_name: text,
-    author_url: statusUrl,
+    author_url: authorUrl,
     provider_name: searchParams.get('provider') ?? branding.name,
-    provider_url: searchParams.get('provider') ? statusUrl : branding.redirect,
+    provider_url: providerUrl,
     title: Strings.DEFAULT_AUTHOR_TEXT,
     type: 'rich',
     version: '1.0'
