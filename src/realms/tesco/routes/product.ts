@@ -498,22 +498,7 @@ export const productRequest = async (c: Context) => {
   }
 
   try {
-    let product = await fetchTescoProduct(c, locale, id);
-    if (!product) {
-      if (!isBotUA) {
-        return c.redirect(originalUrl, 302);
-      }
-
-      const fallbackIcon = getActivityIcon(c) ?? getBranding(c).favicon;
-      product = {
-        url: originalUrl,
-        name: `Tesco product ${id}`,
-        description: 'View this product on Tesco.com',
-        imageUrl: fallbackIcon
-      };
-      console.warn(`Using fallback Tesco embed after product fetch failures: ${originalUrl}`);
-    }
-
+    const product = await fetchTescoProduct(c, locale, id);
     if (!product) {
       return c.redirect(originalUrl, 302);
     }

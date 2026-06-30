@@ -297,58 +297,6 @@ test('Tesco product fetch falls back to cached product data after upstream failu
   expect(html).toContain(`<meta property="og:image" content="${proxiedMockTescoImageUrl}"/>`);
 });
 
-test('Tesco bot product pages return fallback embed metadata after upstream failures', async () => {
-  const fetchMock = vi
-    .spyOn(globalThis, 'fetch')
-    .mockResolvedValue(new Response('blocked', { status: 403 }));
-
-  const result = await app.request(
-    new Request('https://www.fxtesco.com/shop/en-GB/products/310131244', {
-      method: 'GET',
-      headers: botHeaders
-    }),
-    undefined,
-    harness
-  );
-  const html = await result.text();
-
-  expect(result.status).toBe(200);
-  expect(result.headers.get('location')).toBeNull();
-  expect(fetchMock).toHaveBeenCalledTimes(3);
-  expect(html).toContain('<meta property="og:title" content="Tesco product 310131244"/>');
-  expect(html).toContain(
-    '<meta property="og:description" content="View this product on Tesco.com"/>'
-  );
-  expect(html).toContain(
-    '<meta property="og:image" content="https://assets.fxtesco.com/logos/fxtesco-pride64.png"/>'
-  );
-  expect(html).toContain('<link rel="alternate" href="https://fxtesco.com/owoembed?');
-  expect(html).toContain('text=Tesco%20product%20310131244');
-  expect(html).toContain('status=310131244');
-  expect(html).not.toContain('http-equiv="refresh"');
-});
-
-test('Tesco human product pages still redirect after upstream failures', async () => {
-  const fetchMock = vi
-    .spyOn(globalThis, 'fetch')
-    .mockResolvedValue(new Response('blocked', { status: 403 }));
-
-  const result = await app.request(
-    new Request('https://www.fxtesco.com/shop/en-GB/products/310131244', {
-      method: 'GET',
-      headers: { 'User-Agent': 'Mozilla/5.0' }
-    }),
-    undefined,
-    harness
-  );
-
-  expect(result.status).toBe(302);
-  expect(result.headers.get('location')).toBe(
-    'https://www.tesco.com/shop/en-GB/products/310131244'
-  );
-  expect(fetchMock).toHaveBeenCalledTimes(3);
-});
-
 test('Tesco favicon is served from FxTesco branding', async () => {
   const iconBody = new Uint8Array([137, 80, 78, 71]);
   const fetchMock = vi.spyOn(globalThis, 'fetch');
