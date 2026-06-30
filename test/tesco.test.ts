@@ -72,6 +72,9 @@ test('Tesco shop product URLs return Discord embed metadata', async () => {
     '<link rel="icon" href="https://assets.fxtesco.com/logos/fxtesco-pride64.png" sizes="64x64" type="image/png"/>'
   );
   expect(html).toContain(
+    '<link rel="icon" href="https://assets.fxtesco.com/logos/fxtesco-pride.svg" sizes="svgxsvg" type="image/svg+xml"/>'
+  );
+  expect(html).toContain(
     '<link rel="apple-touch-icon" href="https://assets.fxtesco.com/logos/fxtesco-pride32.png"/>'
   );
   expect(html).toContain('<link rel="alternate" href="https://fxtesco.com/owoembed?');
@@ -84,8 +87,6 @@ test('Tesco shop product URLs return Discord embed metadata', async () => {
   expect(html).toContain('v=fixtweet-test');
   expect(html).toContain('provider=Tesco%20Finest%20on%20Tesco');
   expect(html).not.toContain('application/activity+json');
-  expect(html).not.toContain('svgxsvg');
-  expect(html).not.toContain('image/svg+xml');
   expect(html).not.toContain('http-equiv="refresh"');
 });
 
@@ -208,6 +209,9 @@ test('Tesco human product pages advertise FxTesco icons before redirecting', asy
   );
   expect(html).toContain(
     '<link rel="icon" href="https://assets.fxtesco.com/logos/fxtesco-pride32.png" sizes="32x32" type="image/png"/>'
+  );
+  expect(html).toContain(
+    '<link rel="icon" href="https://assets.fxtesco.com/logos/fxtesco-pride.svg" sizes="svgxsvg" type="image/svg+xml"/>'
   );
   expect(html).toContain(
     '<link rel="apple-touch-icon" href="https://assets.fxtesco.com/logos/fxtesco-pride32.png"/>'

@@ -240,7 +240,7 @@ const appendBrandingIconLinks = (c: Context, headers: string[]) => {
 
   const iconSet = Array.isArray(icons) ? icons[0] : icons;
   const defaultIcon = iconSet.default;
-  const iconSizes = ['16', '24', '32', '48', '64'] as const;
+  const iconSizes = ['svg', '64', '48', '32', '24', '16'] as const;
   const emitted = new Set<string>();
 
   if (defaultIcon) {
@@ -254,7 +254,9 @@ const appendBrandingIconLinks = (c: Context, headers: string[]) => {
     }
 
     emitted.add(icon);
-    headers.push(`<link rel="icon" href="${icon}" sizes="${size}x${size}" type="image/png"/>`);
+    headers.push(
+      `<link rel="icon" href="${icon}" sizes="${size}x${size}" type="${size === 'svg' ? 'image/svg+xml' : 'image/png'}"/>`
+    );
   }
 };
 
