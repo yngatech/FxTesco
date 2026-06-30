@@ -488,15 +488,32 @@ export const productRequest = async (c: Context) => {
   const { locale, id } = c.req.param();
   const originalUrl = tescoProductUrl(locale, id);
   const embedUrl = currentProductUrl(c);
+  const reqUserAgent = c.req.header('User-Agent') ?? '';
+  const isBotUA = reqUserAgent.match(Constants.BOT_UA_REGEX) !== null;
 
   let useActivity = false;
 
-  if (c.req.header('user-agent')?.includes('Discordbot')) {
+  if (reqUserAgent.includes('Discordbot')) {
     useActivity = true;
   }
 
   try {
-    const product = await fetchTescoProduct(c, locale, id);
+    let product = await fetchTescoProduct(c, locale, id);
+    if (!product) {
+      if (!isBotUA) {
+        return c.redirect(originalUrl, 302);
+      }
+
+      const fallbackIcon = getActivityIcon(c) ?? getBranding(c).favicon;
+      product = {
+        url: originalUrl,
+        name: `Tesco product ${id}`,
+        description: 'View this product on Tesco.com',
+        imageUrl: fallbackIcon
+      };
+      console.warn(`Using fallback Tesco embed after product fetch failures: ${originalUrl}`);
+    }
+
     if (!product) {
       return c.redirect(originalUrl, 302);
     }
@@ -531,9 +548,6 @@ export const productRequest = async (c: Context) => {
     }
 
     // Bot check for redirect header
-    const reqUserAgent = c.req.header('User-Agent') ?? '';
-    const isBotUA = reqUserAgent.match(Constants.BOT_UA_REGEX) !== null;
-
     if (!isBotUA) {
       headers.push(`<meta http-equiv="refresh" content="0;url=${product.url}"/>`);
     } else {
