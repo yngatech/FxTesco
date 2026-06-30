@@ -323,7 +323,7 @@ test('Tesco favicon is served from FxTesco branding', async () => {
   const body = new Uint8Array(await result.arrayBuffer());
 
   expect(result.status).toBe(200);
-  expect(result.headers.get('content-type')).toBe('image/png');
+  expect(result.headers.get('content-type')).toBe('image/vnd.microsoft.icon');
   expect(result.headers.get('content-length')).toBe(iconBody.byteLength.toString());
   expect(assetsFetch).toHaveBeenCalledTimes(1);
   expect(body.slice(0, 4)).toEqual(new Uint8Array([137, 80, 78, 71]));

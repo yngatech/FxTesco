@@ -8,7 +8,14 @@ export const faviconRoute = async (c: Context) => {
   try {
     const faviconUrl = new URL(branding.favicon);
     if (c.env.ASSETS && Constants.ASSETS_DOMAIN_LIST.includes(faviconUrl.hostname)) {
-      return c.env.ASSETS.fetch(new Request(faviconUrl.toString(), { method: 'GET' }));
+      const response = await c.env.ASSETS.fetch(
+        new Request(faviconUrl.toString(), { method: 'GET' })
+      );
+      const body = await response.arrayBuffer();
+      return c.body(body, response.status as ContentfulStatusCode, {
+        'Content-Type': 'image/vnd.microsoft.icon',
+        'Content-Length': response.headers.get('Content-Length') || body.byteLength.toString()
+      });
     }
 
     const response = await fetch(branding.favicon);
