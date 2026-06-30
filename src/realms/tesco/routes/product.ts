@@ -148,6 +148,13 @@ class TescoDataCollector {
 const tescoProductUrl = (locale: string, id: string) =>
   `https://www.tesco.com/shop/${locale}/products/${id}`;
 
+const currentProductUrl = (c: Context): string => {
+  const url = new URL(c.req.url);
+  url.search = '';
+  url.hash = '';
+  return url.toString();
+};
+
 const tescoProductCacheRequest = (locale: string, id: string) =>
   new Request(
     `https://fxtesco.internal/cache/tesco/${encodeURIComponent(locale)}/products/${encodeURIComponent(id)}`
@@ -187,6 +194,36 @@ const getActivityIcon = (c: Context): string | undefined => {
     return undefined;
   }
   return Array.isArray(icons) ? icons[0]?.default : icons.default;
+};
+
+const appendBrandingIconLinks = (c: Context, headers: string[]) => {
+  const icons = getBranding(c).activityIcons;
+  if (!icons) {
+    return;
+  }
+
+  const iconSet = Array.isArray(icons) ? icons[0] : icons;
+  const defaultIcon = iconSet.default;
+  const iconSizes = ['32', '64', '48', '24', '16'] as const;
+  const emitted = new Set<string>();
+
+  if (defaultIcon) {
+    headers.push(`<link rel="apple-touch-icon" href="${defaultIcon}"/>`);
+  }
+
+  for (const size of iconSizes) {
+    const icon = size === '32' ? (iconSet['32'] ?? defaultIcon) : iconSet[size];
+    if (!icon || emitted.has(icon)) {
+      continue;
+    }
+
+    emitted.add(icon);
+    headers.push(`<link rel="icon" href="${icon}" sizes="${size}x${size}" type="image/png"/>`);
+  }
+
+  if (iconSet.svg && !emitted.has(iconSet.svg)) {
+    headers.push(`<link rel="icon" href="${iconSet.svg}" sizes="any" type="image/svg+xml"/>`);
+  }
 };
 
 const readCachedTescoProduct = async (
@@ -415,6 +452,7 @@ const buildProductActivityStatus = (
 export const productRequest = async (c: Context) => {
   const { locale, id } = c.req.param();
   const originalUrl = tescoProductUrl(locale, id);
+  const embedUrl = currentProductUrl(c);
 
   let useActivity = false;
 
@@ -431,8 +469,8 @@ export const productRequest = async (c: Context) => {
 
     // --- Embed Generation ---
     const headers: string[] = [
-      `<meta property="og:url" content="${product.url}"/>`,
-      `<link rel="canonical" href="${product.url}"/>`,
+      `<meta property="og:url" content="${embedUrl}"/>`,
+      `<link rel="canonical" href="${embedUrl}"/>`,
       `<meta property="og:title" content="${product.name}"/>`,
       `<meta property="og:description" content="${product.description}"/>`, // Base description
       `<meta property="og:image" content="${imageUrl}"/>`,
@@ -445,6 +483,8 @@ export const productRequest = async (c: Context) => {
       `<meta name="theme-color" content="#00539f"/>` // Tesco Blue
     ];
 
+    appendBrandingIconLinks(c, headers);
+
     // If price exists, prepend it to the description meta tags for better visibility
     if (product.price) {
       headers.push(
@@ -453,24 +493,6 @@ export const productRequest = async (c: Context) => {
       headers.push(
         `<meta property="twitter:description" content="${product.price} - ${product.description}"/>`
       );
-    }
-
-    if (useActivity) {
-      const icons = getBranding(c).activityIcons;
-      const iconSizes = ['svg', '64', '48', '32', '24', '16'];
-      for (const size of iconSizes) {
-        let icon = icons?.[size];
-        // Use default icon if size 32 is not available
-        if (size === '32' && !icon) {
-          icon = icons?.['default'];
-        }
-        const iconType = size === 'svg' ? 'image/svg+xml' : 'image/png';
-        if (icon) {
-          headers.push(
-            `<link href='${icon}' rel='icon' sizes='${size}x${size}' type='${iconType}'>`
-          );
-        }
-      }
     }
 
     // Bot check for redirect header

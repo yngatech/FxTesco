@@ -59,12 +59,22 @@ test('Tesco shop product URLs return Discord embed metadata', async () => {
     '<meta property="og:title" content="Tesco Finest Sea Salt & Chardonnay Vinegar Handcooked Crisps 150g"/>'
   );
   expect(html).toContain(
-    '<meta property="og:url" content="https://www.tesco.com/shop/en-GB/products/323311991"/>'
+    '<meta property="og:url" content="https://www.fxtesco.com/shop/en-GB/products/323311991"/>'
+  );
+  expect(html).toContain(
+    '<link rel="canonical" href="https://www.fxtesco.com/shop/en-GB/products/323311991"/>'
   );
   expect(html).toContain(`<meta property="og:image" content="${proxiedMockTescoImageUrl}"/>`);
   expect(html).toContain(
+    '<link rel="icon" href="https://assets.fxtesco.com/logos/fxtesco-pride32.png" sizes="32x32" type="image/png"/>'
+  );
+  expect(html).toContain(
+    '<link rel="icon" href="https://assets.fxtesco.com/logos/fxtesco-pride.svg" sizes="any" type="image/svg+xml"/>'
+  );
+  expect(html).toContain(
     "<link href='https://www.fxtesco.com/users/tesco/statuses/323311991?locale=en-GB' rel='alternate' type='application/activity+json'>"
   );
+  expect(html).not.toContain('svgxsvg');
   expect(html).not.toContain('http-equiv="refresh"');
 });
 
@@ -117,8 +127,45 @@ test('Tesco groceries product URLs remain supported', async () => {
     undefined,
     harness
   );
+  const html = await result.text();
 
   expect(result.status).toBe(200);
+  expect(html).toContain(
+    '<meta property="og:url" content="https://www.fxtesco.com/groceries/en-GB/products/323311991"/>'
+  );
+});
+
+test('Tesco human product pages advertise FxTesco icons before redirecting', async () => {
+  vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+    new Response(mockTescoProductHtml, {
+      status: 200,
+      headers: { 'Content-Type': 'text/html;charset=UTF-8' }
+    })
+  );
+
+  const result = await app.request(
+    new Request('https://www.fxtesco.com/shop/en-GB/products/323311991', {
+      method: 'GET',
+      headers: { 'User-Agent': 'Mozilla/5.0' }
+    }),
+    undefined,
+    harness
+  );
+  const html = await result.text();
+
+  expect(result.status).toBe(200);
+  expect(html).toContain(
+    '<meta property="og:url" content="https://www.fxtesco.com/shop/en-GB/products/323311991"/>'
+  );
+  expect(html).toContain(
+    '<link rel="icon" href="https://assets.fxtesco.com/logos/fxtesco-pride32.png" sizes="32x32" type="image/png"/>'
+  );
+  expect(html).toContain(
+    '<link rel="apple-touch-icon" href="https://assets.fxtesco.com/logos/fxtesco-pride32.png"/>'
+  );
+  expect(html).toContain(
+    '<meta http-equiv="refresh" content="0;url=https://www.tesco.com/shop/en-GB/products/323311991"/>'
+  );
 });
 
 test('Tesco product fetch retries transient upstream failures', async () => {
