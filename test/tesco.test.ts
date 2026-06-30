@@ -81,6 +81,7 @@ test('Tesco shop product URLs return Discord embed metadata', async () => {
   );
   expect(html).toContain('status=323311991');
   expect(html).toContain('locale=en-GB');
+  expect(html).toContain('v=fixtweet-test');
   expect(html).toContain('provider=Tesco%20Finest%20on%20Tesco');
   expect(html).not.toContain('application/activity+json');
   expect(html).not.toContain('svgxsvg');
@@ -104,6 +105,7 @@ test('Tesco oEmbed returns FxEmbed-style provider metadata', async () => {
 
   expect(result.status).toBe(200);
   expect(result.headers.get('content-type')).toBe('application/json');
+  expect(result.headers.get('cache-control')).toBe('no-store');
   expect(body).toEqual({
     author_name: 'Tesco Finest Crisps',
     author_url: 'https://www.tesco.com/shop/en-GB/products/323311991',
@@ -179,6 +181,7 @@ test('Tesco groceries product URLs remain supported', async () => {
   expect(html).toContain('<link rel="alternate" href="https://fxtesco.com/owoembed?');
   expect(html).toContain('status=323311991');
   expect(html).toContain('locale=en-GB');
+  expect(html).toContain('v=fixtweet-test');
 });
 
 test('Tesco human product pages advertise FxTesco icons before redirecting', async () => {

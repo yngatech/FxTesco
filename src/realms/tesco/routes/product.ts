@@ -552,12 +552,13 @@ export const productRequest = async (c: Context) => {
         : '';
 
       headers.push(
-        `<link rel="alternate" href="{base}/owoembed?text={text}&status={status}&locale={locale}{provider}" type="application/json+oembed" title="{name}">`.format(
+        `<link rel="alternate" href="{base}/owoembed?text={text}&status={status}&locale={locale}&v={version}{provider}" type="application/json+oembed" title="{name}">`.format(
           {
             base: `https://${getBranding(c).domains[0] || base}`,
             text: encodeURIComponent(product.name || 'Tesco'),
             status: encodeURIComponent(id),
             locale: encodeURIComponent(locale),
+            version: encodeURIComponent(Constants.RELEASE_NAME),
             provider,
             name: product.name || 'Tesco'
           }
@@ -616,6 +617,7 @@ export const productOEmbedRequest = async (c: Context) => {
   for (const [header, value] of Object.entries(Constants.API_RESPONSE_HEADERS)) {
     c.header(header, value);
   }
+  c.header('cache-control', 'no-store');
   return c.json(data, 200);
 };
 
