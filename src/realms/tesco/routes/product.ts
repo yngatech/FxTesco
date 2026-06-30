@@ -155,6 +155,40 @@ const currentProductUrl = (c: Context): string => {
   return url.toString();
 };
 
+const defaultProductEmbedUrl = (c: Context, locale: string, id: string): string => {
+  const url = new URL(c.req.url);
+  url.pathname = `/shop/${locale}/products/${id}`;
+  url.search = '';
+  url.hash = '';
+  return url.toString();
+};
+
+const activityProductEmbedUrl = (c: Context, locale: string, id: string): string => {
+  const fallback = defaultProductEmbedUrl(c, locale, id);
+  const rawUrl = c.req.query('url');
+  if (!rawUrl) {
+    return fallback;
+  }
+
+  try {
+    const requestUrl = new URL(c.req.url);
+    const parsed = new URL(rawUrl);
+    const expectedPaths = new Set([
+      `/shop/${locale}/products/${id}`,
+      `/groceries/${locale}/products/${id}`
+    ]);
+    if (parsed.origin !== requestUrl.origin || !expectedPaths.has(parsed.pathname)) {
+      return fallback;
+    }
+
+    parsed.search = '';
+    parsed.hash = '';
+    return parsed.toString();
+  } catch (_e) {
+    return fallback;
+  }
+};
+
 const tescoProductCacheRequest = (locale: string, id: string) =>
   new Request(
     `https://fxtesco.internal/cache/tesco/${encodeURIComponent(locale)}/products/${encodeURIComponent(id)}`
@@ -193,7 +227,9 @@ const getActivityIcon = (c: Context): string | undefined => {
   if (!icons) {
     return undefined;
   }
-  return Array.isArray(icons) ? icons[0]?.default : icons.default;
+
+  const iconSet = Array.isArray(icons) ? icons[0] : icons;
+  return iconSet?.['64'] ?? iconSet?.default;
 };
 
 const appendBrandingIconLinks = (c: Context, headers: string[]) => {
@@ -204,7 +240,7 @@ const appendBrandingIconLinks = (c: Context, headers: string[]) => {
 
   const iconSet = Array.isArray(icons) ? icons[0] : icons;
   const defaultIcon = iconSet.default;
-  const iconSizes = ['32', '64', '48', '24', '16'] as const;
+  const iconSizes = ['16', '24', '32', '48', '64'] as const;
   const emitted = new Set<string>();
 
   if (defaultIcon) {
@@ -219,10 +255,6 @@ const appendBrandingIconLinks = (c: Context, headers: string[]) => {
 
     emitted.add(icon);
     headers.push(`<link rel="icon" href="${icon}" sizes="${size}x${size}" type="image/png"/>`);
-  }
-
-  if (iconSet.svg && !emitted.has(iconSet.svg)) {
-    headers.push(`<link rel="icon" href="${iconSet.svg}" sizes="any" type="image/svg+xml"/>`);
   }
 };
 
@@ -376,19 +408,20 @@ const buildProductActivityStatus = (
   c: Context,
   product: TescoProductData,
   locale: string,
-  id: string
+  id: string,
+  embedUrl: string
 ): ActivityStatus => {
   const avatar = getActivityIcon(c);
   const imageUrl = proxyTescoImageUrl(c, product.imageUrl);
-  const accountUrl = 'https://www.tesco.com';
+  const applicationUrl = new URL(embedUrl).origin;
   const description = product.price
     ? `<p><b>${product.price}</b><br>${product.description}</p>`
     : `<p>${product.description}</p>`;
 
   return {
     id,
-    url: product.url,
-    uri: product.url,
+    url: embedUrl,
+    uri: embedUrl,
     created_at: new Date(0).toISOString(),
     edited_at: null,
     reblog: null,
@@ -400,7 +433,7 @@ const buildProductActivityStatus = (
     visibility: 'public',
     application: {
       name: 'Tesco',
-      website: accountUrl
+      website: applicationUrl
     },
     media_attachments: [
       {
@@ -420,8 +453,8 @@ const buildProductActivityStatus = (
       display_name: product.brand ? `${product.brand} on Tesco` : 'Tesco',
       username: 'tesco',
       acct: 'tesco',
-      url: accountUrl,
-      uri: accountUrl,
+      url: embedUrl,
+      uri: embedUrl,
       created_at: new Date(0).toISOString(),
       locked: false,
       bot: false,
@@ -516,12 +549,13 @@ export const productRequest = async (c: Context) => {
 
       /* Convince Discord that you are actually a Mastodon link lol */
       headers.push(
-        `<link href='{base}/users/{author}/statuses/{status}?locale={locale}' rel='alternate' type='application/activity+json'>`.format(
+        `<link href='{base}/users/{author}/statuses/{status}?locale={locale}&url={url}' rel='alternate' type='application/activity+json'>`.format(
           {
             base: `https://${base}`,
             author: encodeURIComponent('tesco'),
             status: encodeURIComponent(id),
-            locale: encodeURIComponent(locale)
+            locale: encodeURIComponent(locale),
+            url: encodeURIComponent(embedUrl)
           }
         )
       );
@@ -546,13 +580,14 @@ export const productRequest = async (c: Context) => {
 export const productActivityRequest = async (c: Context) => {
   const { id } = c.req.param();
   const locale = c.req.query('locale') || 'en-GB';
+  const embedUrl = activityProductEmbedUrl(c, locale, id);
   const product = await fetchTescoProduct(c, locale, id);
 
   if (!product) {
     return c.json({ error: 'Could not fetch Tesco product' }, 502);
   }
 
-  return c.json(buildProductActivityStatus(c, product, locale, id));
+  return c.json(buildProductActivityStatus(c, product, locale, id, embedUrl));
 };
 
 export const productImageRequest = async (c: Context) => {

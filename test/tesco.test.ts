@@ -69,12 +69,13 @@ test('Tesco shop product URLs return Discord embed metadata', async () => {
     '<link rel="icon" href="https://assets.fxtesco.com/logos/fxtesco-pride32.png" sizes="32x32" type="image/png"/>'
   );
   expect(html).toContain(
-    '<link rel="icon" href="https://assets.fxtesco.com/logos/fxtesco-pride.svg" sizes="any" type="image/svg+xml"/>'
+    '<link rel="icon" href="https://assets.fxtesco.com/logos/fxtesco-pride64.png" sizes="64x64" type="image/png"/>'
   );
   expect(html).toContain(
-    "<link href='https://www.fxtesco.com/users/tesco/statuses/323311991?locale=en-GB' rel='alternate' type='application/activity+json'>"
+    "<link href='https://www.fxtesco.com/users/tesco/statuses/323311991?locale=en-GB&url=https%3A%2F%2Fwww.fxtesco.com%2Fshop%2Fen-GB%2Fproducts%2F323311991' rel='alternate' type='application/activity+json'>"
   );
   expect(html).not.toContain('svgxsvg');
+  expect(html).not.toContain('image/svg+xml');
   expect(html).not.toContain('http-equiv="refresh"');
 });
 
@@ -106,9 +107,15 @@ test('Tesco ActivityPub alternate returns Mastodon-shaped product JSON', async (
   expect(body.id).toBe('323311991');
   expect(body.account.acct).toBe('tesco');
   expect(body.account.display_name).toBe('Tesco Finest on Tesco');
-  expect(body.url).toBe('https://www.tesco.com/shop/en-GB/products/323311991');
+  expect(body.url).toBe('https://www.fxtesco.com/shop/en-GB/products/323311991');
+  expect(body.uri).toBe('https://www.fxtesco.com/shop/en-GB/products/323311991');
+  expect(body.application.website).toBe('https://www.fxtesco.com');
+  expect(body.account.url).toBe('https://www.fxtesco.com/shop/en-GB/products/323311991');
+  expect(body.account.uri).toBe('https://www.fxtesco.com/shop/en-GB/products/323311991');
+  expect(body.account.avatar).toBe('https://assets.fxtesco.com/logos/fxtesco-pride64.png');
   expect(body.content).toContain('£1.50');
   expect(body.media_attachments[0]?.url).toBe(proxiedMockTescoImageUrl);
+  expect(JSON.stringify(body)).not.toContain('https://www.tesco.com');
 });
 
 test('Tesco groceries product URLs remain supported', async () => {
@@ -132,6 +139,9 @@ test('Tesco groceries product URLs remain supported', async () => {
   expect(result.status).toBe(200);
   expect(html).toContain(
     '<meta property="og:url" content="https://www.fxtesco.com/groceries/en-GB/products/323311991"/>'
+  );
+  expect(html).toContain(
+    'url=https%3A%2F%2Fwww.fxtesco.com%2Fgroceries%2Fen-GB%2Fproducts%2F323311991'
   );
 });
 
