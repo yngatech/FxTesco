@@ -547,15 +547,19 @@ export const productRequest = async (c: Context) => {
         console.log('couldnt parse hostname for some reason', e);
       }
 
-      /* Convince Discord that you are actually a Mastodon link lol */
+      const provider = product.brand
+        ? `&provider=${encodeURIComponent(`${product.brand} on Tesco`)}`
+        : '';
+
       headers.push(
-        `<link href='{base}/users/{author}/statuses/{status}?locale={locale}&url={url}' rel='alternate' type='application/activity+json'>`.format(
+        `<link rel="alternate" href="{base}/owoembed?text={text}&status={status}&locale={locale}{provider}" type="application/json+oembed" title="{name}">`.format(
           {
-            base: `https://${base}`,
-            author: encodeURIComponent('tesco'),
+            base: `https://${getBranding(c).domains[0] || base}`,
+            text: encodeURIComponent(product.name || 'Tesco'),
             status: encodeURIComponent(id),
             locale: encodeURIComponent(locale),
-            url: encodeURIComponent(embedUrl)
+            provider,
+            name: product.name || 'Tesco'
           }
         )
       );
@@ -588,6 +592,30 @@ export const productActivityRequest = async (c: Context) => {
   }
 
   return c.json(buildProductActivityStatus(c, product, locale, id, embedUrl));
+};
+
+export const productOEmbedRequest = async (c: Context) => {
+  const { searchParams } = new URL(c.req.url);
+  const text = searchParams.get('text') ?? 'Tesco';
+  const status = searchParams.get('status') ?? '0';
+  const locale = searchParams.get('locale') || 'en-GB';
+  const statusUrl = tescoProductUrl(locale, status);
+  const branding = getBranding(c);
+
+  const data: OEmbed = {
+    author_name: text,
+    author_url: statusUrl,
+    provider_name: searchParams.get('provider') ?? branding.name,
+    provider_url: searchParams.get('provider') ? statusUrl : branding.redirect,
+    title: Strings.DEFAULT_AUTHOR_TEXT,
+    type: 'rich',
+    version: '1.0'
+  };
+
+  for (const [header, value] of Object.entries(Constants.API_RESPONSE_HEADERS)) {
+    c.header(header, value);
+  }
+  return c.json(data, 200);
 };
 
 export const productImageRequest = async (c: Context) => {

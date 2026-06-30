@@ -1,7 +1,12 @@
 import { Hono } from 'hono';
 import { trimTrailingSlash } from 'hono/trailing-slash';
 import { faviconRoute } from '../../helpers/favicon';
-import { productActivityRequest, productImageRequest, productRequest } from './routes/product';
+import {
+  productActivityRequest,
+  productImageRequest,
+  productOEmbedRequest,
+  productRequest
+} from './routes/product';
 
 export const tesco = new Hono();
 
@@ -16,6 +21,7 @@ tesco.get('/shop/:locale{[a-zA-Z-]+}/products/:id{[0-9]+}', productRequest);
 // Allows for different locales and captures the product ID
 tesco.get('/groceries/:locale{[a-zA-Z-]+}/products/:id{[0-9]+}', productRequest);
 tesco.get('/users/:author{tesco}/statuses/:id{[0-9]+}', productActivityRequest);
+tesco.get('/owoembed', productOEmbedRequest);
 tesco.get('/image', productImageRequest);
 tesco.get('/favicon.ico', faviconRoute);
 

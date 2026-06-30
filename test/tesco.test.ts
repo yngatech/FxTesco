@@ -72,11 +72,47 @@ test('Tesco shop product URLs return Discord embed metadata', async () => {
     '<link rel="icon" href="https://assets.fxtesco.com/logos/fxtesco-pride64.png" sizes="64x64" type="image/png"/>'
   );
   expect(html).toContain(
-    "<link href='https://www.fxtesco.com/users/tesco/statuses/323311991?locale=en-GB&url=https%3A%2F%2Fwww.fxtesco.com%2Fshop%2Fen-GB%2Fproducts%2F323311991' rel='alternate' type='application/activity+json'>"
+    '<link rel="apple-touch-icon" href="https://assets.fxtesco.com/logos/fxtesco-pride32.png"/>'
   );
+  expect(html).toContain('<link rel="alternate" href="https://fxtesco.com/owoembed?');
+  expect(html).toContain('type="application/json+oembed"');
+  expect(html).toContain(
+    'text=Tesco%20Finest%20Sea%20Salt%20%26%20Chardonnay%20Vinegar%20Handcooked%20Crisps%20150g'
+  );
+  expect(html).toContain('status=323311991');
+  expect(html).toContain('locale=en-GB');
+  expect(html).toContain('provider=Tesco%20Finest%20on%20Tesco');
+  expect(html).not.toContain('application/activity+json');
   expect(html).not.toContain('svgxsvg');
   expect(html).not.toContain('image/svg+xml');
   expect(html).not.toContain('http-equiv="refresh"');
+});
+
+test('Tesco oEmbed returns FxEmbed-style provider metadata', async () => {
+  const result = await app.request(
+    new Request(
+      `https://www.fxtesco.com/owoembed?text=${encodeURIComponent('Tesco Finest Crisps')}&status=323311991&locale=en-GB&provider=${encodeURIComponent('Tesco Finest on Tesco')}`,
+      {
+        method: 'GET',
+        headers: botHeaders
+      }
+    ),
+    undefined,
+    harness
+  );
+  const body = (await result.json()) as OEmbed;
+
+  expect(result.status).toBe(200);
+  expect(result.headers.get('content-type')).toBe('application/json');
+  expect(body).toEqual({
+    author_name: 'Tesco Finest Crisps',
+    author_url: 'https://www.tesco.com/shop/en-GB/products/323311991',
+    provider_name: 'Tesco Finest on Tesco',
+    provider_url: 'https://www.tesco.com/shop/en-GB/products/323311991',
+    title: 'Embed',
+    type: 'rich',
+    version: '1.0'
+  });
 });
 
 test('Tesco ActivityPub alternate returns Mastodon-shaped product JSON', async () => {
@@ -140,9 +176,9 @@ test('Tesco groceries product URLs remain supported', async () => {
   expect(html).toContain(
     '<meta property="og:url" content="https://www.fxtesco.com/groceries/en-GB/products/323311991"/>'
   );
-  expect(html).toContain(
-    'url=https%3A%2F%2Fwww.fxtesco.com%2Fgroceries%2Fen-GB%2Fproducts%2F323311991'
-  );
+  expect(html).toContain('<link rel="alternate" href="https://fxtesco.com/owoembed?');
+  expect(html).toContain('status=323311991');
+  expect(html).toContain('locale=en-GB');
 });
 
 test('Tesco human product pages advertise FxTesco icons before redirecting', async () => {
